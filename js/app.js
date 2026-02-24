@@ -27,7 +27,7 @@ class Grid {
 
     timeline.set(this.dom, { scale: .5 })
     timeline.set(this.products, {
-      scale: 0.5,
+      scale: 0.2,
       opacity: 0,
     })
 
@@ -35,7 +35,7 @@ class Grid {
       scale: 1,
       opacity: 1,
       duration: 0.6,
-      ease: "power3.out",
+      ease: "power4.out",
       stagger: {
         amount: 1.2,
         from: "random"

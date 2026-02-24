@@ -52,10 +52,6 @@
   gap: 5vw;
 }
 
-.column:nth-child(even) {
-  margin-top: 5vw;
-}
-
 .product {
   position: relative;
   width: 18.5vw;
