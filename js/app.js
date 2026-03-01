@@ -219,19 +219,16 @@ class Grid {
     const title = this.details.querySelector(`[data-title="${product.dataset.id}"]`)
     const text = this.details.querySelector(`[data-desc="${product.dataset.id}"]`)
 
-    // Card entra al centro; al llegar se lanza el Flip y el texto
+    // Card y flip ocurren simultáneamente
     gsap.to(this.details, {
       x: 0,
       duration: 1.2,
       ease: "power3.inOut",
       onComplete: () => {
-        this.flipProduct(product)
-
         if (title) {
           gsap.to(title.querySelectorAll(".char"), {
             y: 0,
             duration: 1.1,
-            delay: .2,
             ease: "power3.inOut",
             stagger: 0.025
           })
@@ -241,13 +238,14 @@ class Grid {
           gsap.to(text.querySelectorAll(".line"), {
             y: 0,
             duration: 1.1,
-            delay: .2,
             ease: "power3.inOut",
             stagger: .05,
           })
         }
       }
     })
+
+    this.flipProduct(product)
   }
 
   hideDetails() {
@@ -287,33 +285,125 @@ class Grid {
     })
   }
 
+  getThumbFinalRect() {
+    // Mueve la card al centro momentáneamente para medir el thumb real
+    gsap.set(this.details, { x: 0 })
+    const rect = this.detailsThumb.getBoundingClientRect()
+    gsap.set(this.details, { x: '100vw' })
+    return rect
+  }
+
   flipProduct(product) {
     this.currentProduct = product
     this.originalParent = product.parentNode
+    this.productStartRect = product.getBoundingClientRect()
 
-    const state = Flip.getState(product)
-    this.detailsThumb.appendChild(product)
+    const startRect = this.productStartRect
+    const endRect = this.getThumbFinalRect()
+    const img = product.querySelector('img')
 
-    Flip.from(state, {
-      absolute: true,
+    // Mueve al body para salir de todos los stacking contexts
+    document.body.appendChild(product)
+
+    // Restaura estilos de img que dependían del selector .product img
+    if (img) {
+      img.style.position = 'absolute'
+      img.style.width = '100%'
+      img.style.height = '100%'
+      img.style.objectFit = 'cover'
+    }
+
+    gsap.set(product, {
+      position: 'fixed',
+      left: startRect.left,
+      top: startRect.top,
+      width: startRect.width,
+      height: startRect.height,
+      transformOrigin: '0% 0%',
+      x: 0, y: 0, scaleX: 1, scaleY: 1,
+      zIndex: 9999,
+      margin: 0
+    })
+
+    gsap.to(product, {
+      x: endRect.left - startRect.left,
+      y: endRect.top - startRect.top,
+      scaleX: endRect.width / startRect.width,
+      scaleY: endRect.height / startRect.height,
       duration: 1.2,
       ease: "power3.inOut",
+      onComplete: () => {
+        if (img) {
+          img.style.position = ''
+          img.style.width = ''
+          img.style.height = ''
+          img.style.objectFit = ''
+        }
+        gsap.set(product, { clearProps: 'all' })
+        this.detailsThumb.appendChild(product)
+      }
     })
   }
 
   unFlipProduct() {
     if (!this.currentProduct || !this.originalParent) return
 
-    const state = Flip.getState(this.currentProduct)
-    this.originalParent.appendChild(this.currentProduct)
+    const product = this.currentProduct
+    const parent = this.originalParent
+    const img = product.querySelector('img')
 
-    Flip.from(state, {
-      absolute: true,
+    // Captura posición actual del thumb
+    const startRect = product.getBoundingClientRect()
+
+    // Mide la posición natural actual en el grid (puede diferir del momento del click
+    // si el grid se ha movido con la rueda durante la apertura de la card)
+    parent.appendChild(product)
+    gsap.set(product, { clearProps: 'all' })
+    const endRect = product.getBoundingClientRect()
+
+    // Mueve al body para la animación (currentProduct sigue asignado
+    // para que el IntersectionObserver ignore el producto durante el vuelo)
+    document.body.appendChild(product)
+
+    if (img) {
+      img.style.position = 'absolute'
+      img.style.width = '100%'
+      img.style.height = '100%'
+      img.style.objectFit = 'cover'
+    }
+
+    gsap.set(product, {
+      position: 'fixed',
+      left: startRect.left,
+      top: startRect.top,
+      width: startRect.width,
+      height: startRect.height,
+      transformOrigin: '0% 0%',
+      x: 0, y: 0, scaleX: 1, scaleY: 1,
+      zIndex: 9999,
+      margin: 0
+    })
+
+    gsap.to(product, {
+      x: endRect.left - startRect.left,
+      y: endRect.top - startRect.top,
+      scaleX: endRect.width / startRect.width,
+      scaleY: endRect.height / startRect.height,
       duration: 1.2,
       ease: "power3.inOut",
       onComplete: () => {
         this.currentProduct = null
         this.originalParent = null
+        this.productStartRect = null
+
+        if (img) {
+          img.style.position = ''
+          img.style.width = ''
+          img.style.height = ''
+          img.style.objectFit = ''
+        }
+        gsap.set(product, { clearProps: 'all' })
+        parent.appendChild(product)
       }
     })
   }

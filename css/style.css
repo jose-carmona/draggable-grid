@@ -86,11 +86,31 @@
   left: 50%;
   width: 50vmin;
   height: 50vmin;
-  /* posición inicial: fuera de pantalla a la derecha, centrada en Y */
-  /* GSAP inicializará y animará el transform en el paso 3 */
-  z-index: 9999;
-  isolation: isolate;
+  z-index: 100;
   background-color: #989797;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.details__title {
+  position: relative;
+  display: grid;
+  padding: 0.75rem 1rem;
+  flex-shrink: 0;
+  overflow: hidden;
+
+  p {
+    grid-area: 1 / -1;
+    overflow: hidden;
+    font-size: 1.4vmin;
+    font-weight: bold;
+    text-align: right;
+  }
+}
+
+.details__body {
+  flex: 1;
   display: flex;
   flex-direction: row;
   overflow: hidden;
@@ -98,7 +118,7 @@
 
 .details__thumb {
   position: relative;
-  width: 50%;
+  width: 33.333%;
   height: 100%;
   flex-shrink: 0;
 
@@ -111,34 +131,13 @@
   }
 }
 
-.details__body {
-  width: 50%;
-  height: 100%;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
-  gap: 0;
-}
-
-.details__title {
-  position: relative;
-  display: grid;
-  margin-bottom: 1rem;
-  overflow: hidden;
-
-  p {
-    grid-area: 1 / -1;
-    overflow: hidden;
-    font-size: 1.4vmin;
-    font-weight: bold;
-  }
-}
-
 .details__texts {
+  flex: 1;
   position: relative;
   display: grid;
+  align-content: center;
+  padding: 1.5rem;
+  overflow: hidden;
   line-height: 1.5;
 
   span {
@@ -162,8 +161,6 @@
 
   [data-text] {
     grid-area: 1 / -1;
-    bottom: 0;
-    left: 0;
   }
 }
 
