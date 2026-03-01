@@ -4,7 +4,7 @@ gsap.registerPlugin(Draggable, Flip, SplitText)
 
 class Grid {
   constructor() {
-    this.dom = document.querySelector(".container")
+    this.container = document.querySelector(".container")
     this.grid = document.querySelector(".grid")
     this.products = [...document.querySelectorAll(".product div")]
 
@@ -14,6 +14,9 @@ class Grid {
     this.cross = document.querySelector(".cross")
 
     this.isDragging = false
+
+    // Posiciona la card fuera de pantalla desde el primer momento
+    gsap.set(this.details, { xPercent: -50, yPercent: -50, x: '100vw' })
   }
 
   init() {
@@ -25,7 +28,7 @@ class Grid {
 
     const timeline = gsap.timeline()
 
-    timeline.set(this.dom, { scale: .5 })
+    timeline.set(this.grid, { scale: .5 })
     timeline.set(this.products, {
       scale: 0.2,
       opacity: 0,
@@ -34,16 +37,16 @@ class Grid {
     timeline.to(this.products, {
       scale: 1,
       opacity: 1,
-      duration: 0.6,
+      duration: 0.8,
       ease: "power4.out",
       stagger: {
         amount: 1.2,
         from: "random"
       }
     })
-    timeline.to(this.dom, {
+    timeline.to(this.grid, {
       scale: 1,
-      duration: 1.2,
+      duration: 2,
       ease: "power3.inOut",
       onComplete: () => {
         this.setupDraggable()
@@ -70,7 +73,7 @@ class Grid {
   }
 
   setupDraggable() {
-    this.dom.classList.add("--is-loaded")
+    this.container.classList.add("--is-loaded")
 
     this.draggable = Draggable.create(this.grid, {
       type: "x,y",
@@ -200,8 +203,11 @@ class Grid {
       })
     })
 
-    this.dom.addEventListener("click", (e) => {
-      if (this.SHOW_DETAILS) this.hideDetails()
+    // Cierra la card al hacer click fuera de ella
+    document.addEventListener("click", (e) => {
+      if (this.SHOW_DETAILS && !this.details.contains(e.target)) {
+        this.hideDetails()
+      }
     })
   }
 
@@ -209,66 +215,52 @@ class Grid {
     if (this.SHOW_DETAILS) return
     this.SHOW_DETAILS = true
     this.details.classList.add("--is-showing")
-    this.dom.classList.add("--is-details-showing")
-
-    gsap.to(this.dom, {
-      x: "-50vw",
-      duration: 1.2,
-      ease: "power3.inOut",
-    })
-
-    gsap.to(this.details, {
-      x: 0,
-      duration: 1.2,
-      ease: "power3.inOut",
-    })
-
-    this.flipProduct(product)
 
     const title = this.details.querySelector(`[data-title="${product.dataset.id}"]`)
     const text = this.details.querySelector(`[data-desc="${product.dataset.id}"]`)
 
-    if (title) {
-      gsap.to(title.querySelectorAll(".char"), {
-        y: 0,
-        duration: 1.1,
-        delay: .4,
-        ease: "power3.inOut",
-        stagger: 0.025
-      })
-    }
+    // Card entra al centro; al llegar se lanza el Flip y el texto
+    gsap.to(this.details, {
+      x: 0,
+      duration: 1.2,
+      ease: "power3.inOut",
+      onComplete: () => {
+        this.flipProduct(product)
 
-    if (text) {
-      gsap.to(text.querySelectorAll(".line"), {
-        y: 0,
-        duration: 1.1,
-        delay: .4,
-        ease: "power3.inOut",
-        stagger: .05,
-      })
-    }
+        if (title) {
+          gsap.to(title.querySelectorAll(".char"), {
+            y: 0,
+            duration: 1.1,
+            delay: .2,
+            ease: "power3.inOut",
+            stagger: 0.025
+          })
+        }
+
+        if (text) {
+          gsap.to(text.querySelectorAll(".line"), {
+            y: 0,
+            duration: 1.1,
+            delay: .2,
+            ease: "power3.inOut",
+            stagger: .05,
+          })
+        }
+      }
+    })
   }
 
   hideDetails() {
     this.SHOW_DETAILS = false
 
-    this.dom.classList.remove("--is-details-showing")
-
-    gsap.to(this.dom, {
-      x: 0,
+    // Card sale hacia la derecha
+    gsap.to(this.details, {
+      x: '100vw',
       duration: 1.2,
-      delay: .3,
       ease: "power3.inOut",
       onComplete: () => {
         this.details.classList.remove("--is-showing")
       }
-    })
-
-    gsap.to(this.details, {
-      x: "50vw",
-      duration: 1.2,
-      delay: .3,
-      ease: "power3.inOut"
     })
 
     this.unFlipProduct()
@@ -299,12 +291,7 @@ class Grid {
     this.currentProduct = product
     this.originalParent = product.parentNode
 
-    if (this.observer) {
-      this.observer.unobserve(product)
-    }
-
     const state = Flip.getState(product)
-
     this.detailsThumb.appendChild(product)
 
     Flip.from(state, {
@@ -312,61 +299,22 @@ class Grid {
       duration: 1.2,
       ease: "power3.inOut",
     })
-
-    gsap.to(this.cross, {
-      scale: 1,
-      duration: 0.4,
-      delay: .5,
-      ease: "power2.out"
-    })
   }
 
   unFlipProduct() {
     if (!this.currentProduct || !this.originalParent) return
 
-    gsap.to(this.cross, {
-      scale: 0,
-      duration: 0.4,
-      ease: "power2.out"
-    })
-
     const state = Flip.getState(this.currentProduct)
+    this.originalParent.appendChild(this.currentProduct)
 
-    const finalRect = this.originalParent.getBoundingClientRect()
-    const currentRect = this.currentProduct.getBoundingClientRect()
-
-    gsap.set(this.currentProduct, {
-      position: "absolute",
-      top: currentRect.top - this.detailsThumb.getBoundingClientRect().top + "px",
-      left: currentRect.left - this.detailsThumb.getBoundingClientRect().left + "px",
-      width: currentRect.width + "px",
-      height: currentRect.height + "px",
-      zIndex: 10000,
-    })
-
-    gsap.to(this.currentProduct, {
-      top: finalRect.top - this.detailsThumb.getBoundingClientRect().top + "px",
-      left: finalRect.left - this.detailsThumb.getBoundingClientRect().left + "px",
-      width: finalRect.width + "px",
-      height: finalRect.height + "px",
+    Flip.from(state, {
+      absolute: true,
       duration: 1.2,
-      delay: .3,
       ease: "power3.inOut",
       onComplete: () => {
-        this.originalParent.appendChild(this.currentProduct)
-
-        gsap.set(this.currentProduct, {
-          position: "",
-          top: "",
-          left: "",
-          width: "",
-          height: "",
-          zIndex: "",
-        })
-
         this.currentProduct = null
         this.originalParent = null
-      },
+      }
     })
   }
 
@@ -389,3 +337,15 @@ preloadImages('.grid img').then(() => {
   grid.init()
   document.body.classList.remove('loading')
 })
+
+// API de consola para testing
+window.showCard = (index = 0) => {
+  const product = grid.products[index]
+  if (product) grid.showDetails(product)
+  else console.warn(`No existe producto en el índice ${index}. Total: ${grid.products.length}`)
+}
+
+window.closeCard = () => {
+  if (grid.SHOW_DETAILS) grid.hideDetails()
+  else console.warn('No hay ninguna card abierta')
+}
